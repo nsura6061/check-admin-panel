@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuth, PERMISSIONS } from '@/contexts/AuthContext';
@@ -173,7 +172,11 @@ const MarketingPage: React.FC = () => {
                     <span className="text-sm font-medium">{item.source}</span>
                     <span className="text-sm font-medium">{item.conversion}%</span>
                   </div>
-                  <Progress value={item.conversion} className="h-2" indicatorClassName={`bg-[${COLORS[index % COLORS.length]}]`} />
+                  <Progress 
+                    value={item.conversion} 
+                    className="h-2" 
+                    indicatorClassName={`bg-[${COLORS[index % COLORS.length]}]`} 
+                  />
                 </div>
               ))}
             </div>
