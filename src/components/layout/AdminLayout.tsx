@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
-import { useAuth, PERMISSIONS } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -18,65 +18,31 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-
-interface MenuItem {
-  name: string;
-  icon: React.ElementType;
-  path: string;
-  permission: string;
-  children?: Omit<MenuItem, 'children'>[];
-}
+import { useMenu } from '@/hooks/useMenu';
+import { MenuItem } from '@/services/authService';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const MENU_ITEMS: MenuItem[] = [
-  {
-    name: 'Dashboard',
-    icon: Home,
-    path: '/',
-    permission: PERMISSIONS.VIEW_DASHBOARD,
-  },
-  {
-    name: 'Analytics',
-    icon: BarChart,
-    path: '/analytics',
-    permission: PERMISSIONS.VIEW_ANALYTICS,
-    children: [
-      {
-        name: 'Performance',
-        icon: LineChart,
-        path: '/analytics/performance',
-        permission: PERMISSIONS.VIEW_PERFORMANCE,
-      },
-      {
-        name: 'Revenue',
-        icon: Activity,
-        path: '/analytics/revenue',
-        permission: PERMISSIONS.VIEW_REVENUE,
-      },
-      {
-        name: 'Marketing',
-        icon: PieChart,
-        path: '/analytics/marketing',
-        permission: PERMISSIONS.VIEW_MARKETING,
-      },
-    ],
-  },
-  {
-    name: 'Users',
-    icon: Users,
-    path: '/users',
-    permission: PERMISSIONS.VIEW_USERS,
-  },
-];
+// A mapping of icon string names to Lucide icon components
+const iconMap: Record<string, React.ElementType> = {
+  Home: Home,
+  BarChart: BarChart,
+  Users: Users,
+  LineChart: LineChart,
+  Activity: Activity,
+  PieChart: PieChart,
+};
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { user, logout, hasPermission, isLoading } = useAuth();
+  const { user, logout, isLoading: authLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
   const location = useLocation();
+  const { menu, isLoading: menuLoading } = useMenu();
+  
+  const isLoading = authLoading || menuLoading;
   
   if (isLoading) {
     return <LoadingScreen />;
@@ -95,8 +61,77 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const isActive = (path: string) => location.pathname === path;
   
-  const filteredMenuItems = MENU_ITEMS.filter(item => hasPermission(item.permission));
-
+  // Render a menu item (or submenu)
+  const renderMenuItem = (item: MenuItem) => {
+    const IconComponent = iconMap[item.icon] || Home;
+    
+    if (item.children && item.children.length > 0) {
+      return (
+        <li key={item.id} className="px-2 py-1">
+          <div className="space-y-1">
+            <Button 
+              variant="ghost" 
+              className={cn(
+                "w-full justify-between text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                openMenus[item.name] ? "bg-sidebar-accent/50" : ""
+              )}
+              onClick={() => toggleSubmenu(item.name)}
+            >
+              <div className="flex items-center">
+                <IconComponent size={20} className="mr-2" />
+                {sidebarOpen && <span>{item.name}</span>}
+              </div>
+              {sidebarOpen && (
+                openMenus[item.name] ? <ChevronDown size={16} /> : <ChevronRight size={16} />
+              )}
+            </Button>
+            
+            {sidebarOpen && openMenus[item.name] && (
+              <ul className="pl-6 space-y-1">
+                {item.children.map(subItem => {
+                  const SubIconComponent = iconMap[subItem.icon] || Home;
+                  return (
+                    <li key={subItem.id}>
+                      <Link to={subItem.path}>
+                        <Button 
+                          variant="ghost" 
+                          className={cn(
+                            "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                            isActive(subItem.path) ? "bg-sidebar-accent text-sidebar-primary" : ""
+                          )}
+                        >
+                          <SubIconComponent size={18} className="mr-2" />
+                          <span>{subItem.name}</span>
+                        </Button>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </li>
+      );
+    } else {
+      return (
+        <li key={item.id} className="px-2 py-1">
+          <Link to={item.path}>
+            <Button 
+              variant="ghost" 
+              className={cn(
+                "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                isActive(item.path) ? "bg-sidebar-accent text-sidebar-primary" : ""
+              )}
+            >
+              <IconComponent size={20} className="mr-2" />
+              {sidebarOpen && <span>{item.name}</span>}
+            </Button>
+          </Link>
+        </li>
+      );
+    }
+  };
+  
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
@@ -129,67 +164,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         {/* Navigation */}
         <nav className="flex-grow overflow-y-auto">
           <ul className="py-2">
-            {filteredMenuItems.map((item) => (
-              <li key={item.name} className="px-2 py-1">
-                {item.children ? (
-                  <div className="space-y-1">
-                    <Button 
-                      variant="ghost" 
-                      className={cn(
-                        "w-full justify-between text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        openMenus[item.name] ? "bg-sidebar-accent/50" : ""
-                      )}
-                      onClick={() => toggleSubmenu(item.name)}
-                    >
-                      <div className="flex items-center">
-                        <item.icon size={20} className="mr-2" />
-                        {sidebarOpen && <span>{item.name}</span>}
-                      </div>
-                      {sidebarOpen && (
-                        openMenus[item.name] ? <ChevronDown size={16} /> : <ChevronRight size={16} />
-                      )}
-                    </Button>
-                    
-                    {sidebarOpen && openMenus[item.name] && (
-                      <ul className="pl-6 space-y-1">
-                        {item.children
-                          .filter(subItem => hasPermission(subItem.permission))
-                          .map(subItem => (
-                            <li key={subItem.name}>
-                              <Link to={subItem.path}>
-                                <Button 
-                                  variant="ghost" 
-                                  className={cn(
-                                    "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                                    isActive(subItem.path) ? "bg-sidebar-accent text-sidebar-primary" : ""
-                                  )}
-                                >
-                                  <subItem.icon size={18} className="mr-2" />
-                                  <span>{subItem.name}</span>
-                                </Button>
-                              </Link>
-                            </li>
-                          ))
-                        }
-                      </ul>
-                    )}
+            {menuLoading ? (
+              // Show skeleton loaders while menu is loading
+              Array(4).fill(0).map((_, index) => (
+                <li key={index} className="px-2 py-1">
+                  <div className="flex items-center space-x-2 p-2">
+                    <Skeleton className="h-5 w-5 rounded-md" />
+                    {sidebarOpen && <Skeleton className="h-5 w-24 rounded-md" />}
                   </div>
-                ) : (
-                  <Link to={item.path}>
-                    <Button 
-                      variant="ghost" 
-                      className={cn(
-                        "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        isActive(item.path) ? "bg-sidebar-accent text-sidebar-primary" : ""
-                      )}
-                    >
-                      <item.icon size={20} className="mr-2" />
-                      {sidebarOpen && <span>{item.name}</span>}
-                    </Button>
-                  </Link>
-                )}
-              </li>
-            ))}
+                </li>
+              ))
+            ) : (
+              menu.map(renderMenuItem)
+            )}
           </ul>
         </nav>
 

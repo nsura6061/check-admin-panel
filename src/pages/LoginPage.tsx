@@ -94,8 +94,21 @@ const LoginPage: React.FC = () => {
         </CardFooter>
         
         <div className="p-4 bg-muted/50 rounded-b-lg">
-          <h3 className="text-sm font-medium text-center">Available Test Accounts</h3>
-          <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+          <h3 className="text-sm font-medium text-center mb-2">Integration Notes</h3>
+          <div className="text-xs space-y-1">
+            <p className="bg-background p-2 rounded">
+              <span className="font-semibold">Spring Boot Endpoints:</span>
+              <br />
+              - POST /api/auth/login
+              <br />
+              - POST /api/auth/refresh-token
+              <br />
+              - GET /api/user/menu
+            </p>
+          </div>
+          
+          <h3 className="text-sm font-medium text-center mt-3 mb-2">Available Test Accounts</h3>
+          <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-background p-2 rounded">
               <div className="font-semibold">Admin</div>
               <div>admin@example.com</div>

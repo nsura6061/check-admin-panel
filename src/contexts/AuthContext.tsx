@@ -1,14 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
+import authService from '@/services/authService';
 
 export type UserRole = 'admin' | 'manager' | 'analyst' | 'viewer';
-
-export interface Permission {
-  id: string;
-  name: string;
-  description: string;
-}
 
 export interface User {
   id: string;
@@ -28,7 +23,7 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
-// Mock permissions
+// Export permissions for reference
 export const PERMISSIONS = {
   VIEW_DASHBOARD: 'view_dashboard',
   VIEW_ANALYTICS: 'view_analytics',
@@ -38,55 +33,6 @@ export const PERMISSIONS = {
   VIEW_PERFORMANCE: 'view_performance',
   VIEW_MARKETING: 'view_marketing',
 };
-
-// Mock user data with different roles and permissions
-const MOCK_USERS: User[] = [
-  {
-    id: '1',
-    email: 'admin@example.com',
-    name: 'Admin User',
-    avatar: '',
-    role: 'admin',
-    permissions: Object.values(PERMISSIONS),
-  },
-  {
-    id: '2',
-    email: 'manager@example.com',
-    name: 'Manager User',
-    avatar: '',
-    role: 'manager',
-    permissions: [
-      PERMISSIONS.VIEW_DASHBOARD,
-      PERMISSIONS.VIEW_ANALYTICS,
-      PERMISSIONS.VIEW_REVENUE,
-      PERMISSIONS.VIEW_PERFORMANCE,
-      PERMISSIONS.VIEW_MARKETING,
-    ],
-  },
-  {
-    id: '3',
-    email: 'analyst@example.com',
-    name: 'Analyst User',
-    avatar: '',
-    role: 'analyst',
-    permissions: [
-      PERMISSIONS.VIEW_DASHBOARD, 
-      PERMISSIONS.VIEW_ANALYTICS,
-      PERMISSIONS.VIEW_PERFORMANCE,
-      PERMISSIONS.VIEW_MARKETING,
-    ],
-  },
-  {
-    id: '4',
-    email: 'viewer@example.com',
-    name: 'Viewer User',
-    avatar: '',
-    role: 'viewer',
-    permissions: [
-      PERMISSIONS.VIEW_DASHBOARD,
-    ],
-  },
-];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -107,22 +53,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API request delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const foundUser = MOCK_USERS.find(u => u.email === email);
-      if (!foundUser || password !== 'password') { // All mock users have password 'password'
-        throw new Error('Invalid email or password');
-      }
-
-      setUser(foundUser);
-      localStorage.setItem('currentUser', JSON.stringify(foundUser));
+      const loggedInUser = await authService.login(email, password);
+      setUser(loggedInUser);
       
       toast({
         title: "Login successful",
-        description: `Welcome back, ${foundUser.name}!`,
+        description: `Welcome back, ${loggedInUser.name}!`,
       });
-      
     } catch (error) {
       toast({
         variant: "destructive",
@@ -136,11 +73,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem('currentUser');
-    toast({
-      title: "Logged out",
-      description: "You have been logged out successfully.",
+    authService.logout().then(() => {
+      setUser(null);
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully.",
+      });
     });
   };
 
