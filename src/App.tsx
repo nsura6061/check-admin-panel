@@ -12,6 +12,7 @@ import UsersPage from "./pages/UsersPage";
 import PerformancePage from "./pages/analytics/PerformancePage";
 import RevenuePage from "./pages/analytics/RevenuePage";
 import MarketingPage from "./pages/analytics/MarketingPage";
+import CourseDashboardPage from "./pages/CourseDashboardPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,14 @@ const App = () => (
               element={
                 <AdminLayout>
                   <MarketingPage />
+                </AdminLayout>
+              } 
+            />
+            <Route 
+              path="/courses/dashboard" 
+              element={
+                <AdminLayout>
+                  <CourseDashboardPage />
                 </AdminLayout>
               } 
             />
