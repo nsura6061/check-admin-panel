@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Play, Video, BookOpen } from "lucide-react";
+import { toast } from "sonner";
 
 interface VideoLesson {
   id: string;
@@ -109,9 +110,22 @@ const CourseDashboardPage: React.FC = () => {
     }
   ];
 
+  useEffect(() => {
+    // Set the first video as default when the component loads
+    if (chapters.length > 0 && chapters[0].lessons.length > 0) {
+      setCurrentVideo(chapters[0].lessons[0]);
+    }
+  }, []);
+
   const handlePlayVideo = (video: VideoLesson) => {
     setCurrentVideo(video);
     setActiveTab("video");
+    toast.success(`Now playing: ${video.title}`);
+  };
+
+  const markAsCompleted = (lessonId: string) => {
+    // This would be replaced with an API call in a real app
+    toast.success("Lesson marked as completed");
   };
 
   return (
@@ -160,6 +174,15 @@ const CourseDashboardPage: React.FC = () => {
                     ></video>
                   </div>
                 </CardContent>
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => markAsCompleted(currentVideo.id)}
+                    className="ml-auto"
+                  >
+                    Mark as Completed
+                  </Button>
+                </CardFooter>
               </Card>
             </div>
           ) : (
